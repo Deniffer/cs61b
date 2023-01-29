@@ -137,7 +137,13 @@ public class Model extends Observable {
      *  Empty spaces are stored as null.
      * */
     public static boolean emptySpaceExists(Board b) {
-        // TODO: Fill in this function.
+        for (int i = 0; i < b.size() ; i++) {
+            for (int j = 0; j < b.size(); j++) {
+                if (b.tile(i,j) == null) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -147,10 +153,38 @@ public class Model extends Observable {
      * given a Tile object t, we get its value with t.value().
      */
     public static boolean maxTileExists(Board b) {
-        // TODO: Fill in this function.
+        for (int i = 0; i < b.size(); i++) {
+            for (int j = 0; j < b.size(); j++) {
+                if (b.tile(i,j) != null && b.tile(i,j).value() == MAX_PIECE) {
+                    return  true;
+                }
+            }
+        }
         return false;
     }
 
+    private static  boolean equalTile(Tile tile, Tile otherTile) {
+        if(tile == null || otherTile == null) {
+            return false;
+        }
+        return  tile.value() == otherTile.value();
+    }
+
+    private static boolean validSibling(int col, int row, int size) {
+        return col > 0 && row > 0 && col < size && row < size;
+    }
+
+    private  static boolean hasSameValueSibling(int row, int col, Board b) {
+        Tile currentTile = b.tile(col,row);
+        Tile leftTile = validSibling(col-1,row, b.size()) ? b.tile(col-1,row) : null;
+        Tile rightTile = validSibling(col+1,row, b.size()) ? b.tile(col+1,row) : null;
+        Tile bottomTile = validSibling(col, row-1, b.size()) ? b.tile(col,row-1) : null;
+        Tile topTile = validSibling(col,row+1, b.size()) ? b.tile(col,row+1) : null;
+        if (equalTile(currentTile,leftTile) || equalTile(currentTile,rightTile) || equalTile(currentTile,bottomTile) || equalTile(currentTile,topTile)) {
+            return true;
+        }
+        return false;
+    }
     /**
      * Returns true if there are any valid moves on the board.
      * There are two ways that there can be valid moves:
@@ -159,6 +193,18 @@ public class Model extends Observable {
      */
     public static boolean atLeastOneMoveExists(Board b) {
         // TODO: Fill in this function.
+        if (emptySpaceExists(b)) {
+            return true;
+        }
+
+        for (int i = 0; i < b.size(); i++) {
+            for (int j = 0; j < b.size(); j++) {
+                if (hasSameValueSibling(i,j,b)) {
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 
