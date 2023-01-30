@@ -16,6 +16,7 @@ public class Model extends Observable {
     private int maxScore;
     /** True iff game is ended. */
     private boolean gameOver;
+    private int stepCount;
 
     /* Coordinate System: column C, row R of the board (where row 0,
      * column 0 is the lower-left corner of the board) will correspond
@@ -24,6 +25,7 @@ public class Model extends Observable {
 
     /** Largest piece value. */
     public static final int MAX_PIECE = 2048;
+    private  static final int NO_AVAILABLE_ROW = -1;
 
     /** A new 2048 game on a board of size SIZE with no pieces
      *  and score 0. */
@@ -42,6 +44,7 @@ public class Model extends Observable {
         this.score = score;
         this.maxScore = maxScore;
         this.gameOver = gameOver;
+        this.stepCount = 0;
     }
 
     /** Return the current Tile at (COL, ROW), where 0 <= ROW < size(),
@@ -113,12 +116,81 @@ public class Model extends Observable {
         // TODO: Modify this.board (and perhaps this.score) to account
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
-
+        // for all cols in board
+        this.board.setViewingPerspective(side);
+        for (int col = 0; col < size(); col++) {
+            if(iterateCol(col)) {
+                changed = true;
+            }
+        }
         checkGameOver();
+        this.board.setViewingPerspective(Side.NORTH);
         if (changed) {
             setChanged();
         }
         return changed;
+    }
+
+    private boolean iterateCol(int col) {
+        Board board = this.board;
+        boolean changed = false;
+        // start from second one
+        for (int row = board.size() - 2; row >= 0; row --) {
+            Tile tile = board.tile(col, row);
+            if (tile == null) {
+                continue;
+            }
+            Tile siblingTile = findNearbySiblingTileInNORTH(col,row);
+            if (equalTile(tile,siblingTile)) {
+                int desiredRowValue = siblingTile.row();
+                boolean needUpdateScore = board.move(col,desiredRowValue,tile);
+                if(needUpdateScore){
+                    this.score += tile.value() * 2;
+                }
+                System.out.println(String.format("%d. merge and place to %s siblingTile: %s , mergeTile %s:",this.stepCount,tile,siblingTile,tile.next()));
+
+                changed = true;
+            } else if (hasAvailableRow(col, tile.row())) {
+                int desiredRowValue = getDesireRowValue(col,tile.row());
+                board.move(col,desiredRowValue,tile);
+                changed = true;
+                System.out.println(String.format("%d. from %s move to %s",this.stepCount,tile,tile.next()));
+            } else {
+                System.out.println(String.format("%d. Nothing happen to %s",this.stepCount,tile));
+            }
+            this.stepCount++;
+        }
+        return  changed;
+    }
+
+    private Tile findNearbySiblingTileInNORTH(int col, int row) {
+        Tile siblingTile = null;
+        Board board = this.board;
+        for (row++;row < size();row++) {
+            siblingTile = board.tile(col, row);
+            // siblingTile Not merged yet!
+            if (siblingTile != null && siblingTile.distToNext() == 0) {
+                System.out.println(String.format("available siblingTile : %s, sibling.nextValue: %d",siblingTile.toString(),siblingTile.next().value()));
+                break; 
+            }
+        }
+
+        return  siblingTile;
+    }
+
+    private boolean hasAvailableRow(int col, int currentRow) {
+        int availableRowValue = getDesireRowValue(col, currentRow);
+        System.out.println(String.format("availableRowValue : %d, %s",availableRowValue,this.board.tile(col,currentRow)));
+        return  availableRowValue > 0;
+    }
+    private int getDesireRowValue (int col, int currentRow) {
+        int availableRowValue = size() - 1;
+        for (;availableRowValue > currentRow; availableRowValue --) {
+            if (this.board.tile(col,availableRowValue) == null) {
+                return  availableRowValue;
+            }
+        }
+        return  NO_AVAILABLE_ROW;
     }
 
     /** Checks if the game is over and sets the gameOver variable
