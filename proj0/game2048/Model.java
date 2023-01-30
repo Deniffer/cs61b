@@ -118,6 +118,7 @@ public class Model extends Observable {
         // changed local variable to true.
         // for all cols in board
         this.board.setViewingPerspective(side);
+//        changed = moveUp();
         for (int col = 0; col < size(); col++) {
             if(iterateCol(col)) {
                 changed = true;
@@ -131,7 +132,64 @@ public class Model extends Observable {
         return changed;
     }
 
+
+    private  boolean moveUp() {
+        boolean changed = false;
+        for (int col = 0; col < size(); col++) {
+            // move to top if top is null | merge to top if top is Not null
+            for (int row = size() -1; row > 0; row--){
+                Tile tile = board.tile(col,row);
+//                Tile nextTile = getNearbyTile(col, row);
+//                if (nextTile == null) break;
+                int nextRow = nextNonNullTileRow(col, row);
+                if (nextRow == -1) break;
+                Tile nextTile = board.tile(col, nextRow);
+                // move up to empty palace
+                if (tile == null || equalTile(tile, nextTile)) {
+                    changed =true;
+                    // move doesn't count iterate
+                    if (board.move(col, row, nextTile)) {
+                        score += tile.value() * 2;
+                    } else {
+                        row++;
+                    }
+                }
+
+            }
+        }
+        return changed;
+    }
+
+    private int nextNonNullTileRow(int col, int row) {
+        for (int pos = row - 1; pos >= 0; pos--) {
+            if (board.tile(col, pos) != null) {
+                return pos;
+            }
+        }
+        return -1;
+    }
+
+    private Tile getNearbyTile(int col,int currentRow) {
+        Tile nearbyTile = null;
+        for (int row = currentRow - 1; row > 0; row--) {
+             nearbyTile = board.tile(col,row);
+            if (nearbyTile != null) {
+                break;
+            }
+        }
+        return nearbyTile;
+    }
+
     private boolean iterateCol(int col) {
+        //      board.move(c, r, t) 是已经计算好要移动到这个位置的了
+        /**
+         *  c,r
+         *  0,3  1,3  2,3  3,3
+         *  0,2  1,2  2,2  3,2
+         *  0,1  1,1  2,1  3,1
+         *  0,0  1,0  2,0  3,0
+         */
+
         Board board = this.board;
         boolean changed = false;
         boolean [] merged = new boolean[size()];
@@ -141,7 +199,10 @@ public class Model extends Observable {
             if (tile == null) {
                 continue;
             }
-            Tile siblingTile = findNearbySiblingTileInNORTH(col,row);
+//            Tile siblingTile = findNearbySiblingTileInNORTH(col,row);
+            int nextRow = nextNonNullTileRow(col, row);
+            if (nextRow == -1) break;
+            Tile siblingTile = board.tile(col,nextRow);
             if (equalTile(tile,siblingTile) && !merged[siblingTile.row()]) {
                 int desiredRowValue = siblingTile.row();
                 boolean needUpdateScore = board.move(col, desiredRowValue, tile);
@@ -164,9 +225,6 @@ public class Model extends Observable {
                 board.move(col,desiredRowValue,tile);
                 changed = true;
                 System.out.println(String.format("%d. from %s move to %s",this.stepCount,tile,tile.next()));
-            }
-            if(!equalTile(tile,siblingTile) && !hasAvailableRow(col,tile.row())) {
-                System.out.println(String.format("%d. Nothing happen to %s",this.stepCount,tile));
             }
             this.stepCount++;
         }
