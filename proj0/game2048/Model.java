@@ -118,12 +118,8 @@ public class Model extends Observable {
         // changed local variable to true.
         // for all cols in board
         this.board.setViewingPerspective(side);
-//        changed = moveUp();
-        for (int col = 0; col < size(); col++) {
-            if(iterateCol(col)) {
-                changed = true;
-            }
-        }
+        changed = moveUp();
+
         checkGameOver();
         this.board.setViewingPerspective(Side.NORTH);
         if (changed) {
@@ -139,12 +135,8 @@ public class Model extends Observable {
             // move to top if top is null | merge to top if top is Not null
             for (int row = size() -1; row > 0; row--){
                 Tile tile = board.tile(col,row);
-//                Tile nextTile = getNearbyTile(col, row);
-//                if (nextTile == null) break;
-                int nextRow = nextNonNullTileRow(col, row);
-                if (nextRow == -1) break;
-                Tile nextTile = board.tile(col, nextRow);
-                // move up to empty palace
+                Tile nextTile = getNearbyTile(col, row);
+                if (nextTile == null) break;
                 if (tile == null || equalTile(tile, nextTile)) {
                     changed =true;
                     // move doesn't count iterate
@@ -160,18 +152,9 @@ public class Model extends Observable {
         return changed;
     }
 
-    private int nextNonNullTileRow(int col, int row) {
-        for (int pos = row - 1; pos >= 0; pos--) {
-            if (board.tile(col, pos) != null) {
-                return pos;
-            }
-        }
-        return -1;
-    }
-
     private Tile getNearbyTile(int col,int currentRow) {
         Tile nearbyTile = null;
-        for (int row = currentRow - 1; row > 0; row--) {
+        for (int row = currentRow - 1; row >= 0; row--) {
              nearbyTile = board.tile(col,row);
             if (nearbyTile != null) {
                 break;
