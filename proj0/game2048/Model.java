@@ -118,36 +118,16 @@ public class Model extends Observable {
         // changed local variable to true.
         // for all cols in board
         this.board.setViewingPerspective(side);
-        changed = moveUp();
+        for(int col=0;col < size();col++) {
+            if(iterateCol(col)) {
+                changed =true;
+            }
+        }
 
         checkGameOver();
         this.board.setViewingPerspective(Side.NORTH);
         if (changed) {
             setChanged();
-        }
-        return changed;
-    }
-
-
-    private  boolean moveUp() {
-        boolean changed = false;
-        for (int col = 0; col < size(); col++) {
-            // move to top if top is null | merge to top if top is Not null
-            for (int row = size() -1; row > 0; row--){
-                Tile tile = board.tile(col,row);
-                Tile nextTile = getNearbyTile(col, row);
-                if (nextTile == null) break;
-                if (tile == null || equalTile(tile, nextTile)) {
-                    changed =true;
-                    // move doesn't count iterate
-                    if (board.move(col, row, nextTile)) {
-                        score += tile.value() * 2;
-                    } else {
-                        row++;
-                    }
-                }
-
-            }
         }
         return changed;
     }
@@ -164,7 +144,6 @@ public class Model extends Observable {
     }
 
     private boolean iterateCol(int col) {
-        //      board.move(c, r, t) 是已经计算好要移动到这个位置的了
         /**
          *  c,r
          *  0,3  1,3  2,3  3,3
@@ -182,29 +161,17 @@ public class Model extends Observable {
             if (tile == null) {
                 continue;
             }
-//            Tile siblingTile = findNearbySiblingTileInNORTH(col,row);
-            int nextRow = nextNonNullTileRow(col, row);
-            if (nextRow == -1) break;
-            Tile siblingTile = board.tile(col,nextRow);
-            if (equalTile(tile,siblingTile) && !merged[siblingTile.row()]) {
-                int desiredRowValue = siblingTile.row();
-                boolean needUpdateScore = board.move(col, desiredRowValue, tile);
-                merged[siblingTile.row()] = true;
+            int siblingTileRow = findNearbySiblingTileRow(col,row);
+            if (siblingTileRow != NO_AVAILABLE_ROW && equalTile(tile,board.tile(col,siblingTileRow)) && !merged[siblingTileRow]) {
+                boolean needUpdateScore = board.move(col, siblingTileRow, tile);
+                merged[siblingTileRow] = true;
                 if (needUpdateScore) {
                     this.score += tile.value() * 2;
                 }
-                // In case need to update merge pos
-                if (hasAvailableRow(col,desiredRowValue)) {
-                    desiredRowValue = getDesireRowValue(col,desiredRowValue);
-                    board.move(col,desiredRowValue,tile.next());
-                    merged[siblingTile.row()] = false;
-                    merged[desiredRowValue] = true;
-                }
-
-                System.out.println(String.format("%d. merge and place to %s siblingTile: %s , mergeTile %s:", this.stepCount, tile, siblingTile, tile.next()));
+                System.out.println(String.format("%d. merge and place to %s siblingTile: , mergeTile %s:", this.stepCount, tile, tile.next()));
                 changed = true;
-            } else if (hasAvailableRow(col, tile.row())) {
-                int desiredRowValue = getDesireRowValue(col,tile.row());
+            } else if (hasAvailableRow(col, row)) {
+                int desiredRowValue = getDesireRowValue(col, row);
                 board.move(col,desiredRowValue,tile);
                 changed = true;
                 System.out.println(String.format("%d. from %s move to %s",this.stepCount,tile,tile.next()));
@@ -214,24 +181,26 @@ public class Model extends Observable {
         return  changed;
     }
 
-    private Tile findNearbySiblingTileInNORTH(int col, int row) {
+    private int findNearbySiblingTileRow(int col, int row) {
         Tile siblingTile = null;
         Board board = this.board;
+        if (row == size() -1) {
+            return  NO_AVAILABLE_ROW;
+        }
         for (row++;row < size();row++) {
             siblingTile = board.tile(col, row);
             // siblingTile Not merged yet!
             if (siblingTile != null) {
-                System.out.println(String.format("available siblingTile : %s, sibling.nextValue: %d",siblingTile.toString(),siblingTile.next().value()));
-                break;
+                return  row;
             }
         }
-        return  siblingTile;
+        return  NO_AVAILABLE_ROW;
     }
 
     private boolean hasAvailableRow(int col, int currentRow) {
         int availableRowValue = getDesireRowValue(col, currentRow);
         System.out.println(String.format("availableRowValue : %d, %s",availableRowValue,this.board.tile(col,currentRow)));
-        return  availableRowValue > 0;
+        return  availableRowValue != NO_AVAILABLE_ROW;
     }
     private int getDesireRowValue (int col, int currentRow) {
         int availableRowValue = size() - 1;
